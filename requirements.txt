@@ -1,19 +1,8 @@
-streamlit==1.37. 1
-
-# OpenAI & Tokenizer
-openai>=1.40,<2
-tiktoken>=0.7,<1
-
-# LangChain 본체와 플러그인
-langchain==0.2. 16
-langchain-openai==0.1. 9
-langchain-community==0.2. 16
-langchain-text-splitters==0.2. 2
-
-# 벡터 데이터베이스와 PDF 처리
-faiss-cpu==1.8. 0.post1
-pypdf==4.2. 0
-
-# 환경 변수 & 데이터 도구
-python-dotenv==1.0. 1
-pandas==2.2.2
+streamlit==1.28.1
+langchain==0.1.0
+langchain-openai==0.0.5
+langchain-community==0.0.10
+faiss-cpu==1.7.4
+pypdf2==3.0.1
+python-dotenv==1.0.0
+tiktoken>=0.5.2
