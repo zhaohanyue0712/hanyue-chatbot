@@ -1,12 +1,10 @@
 import streamlit as st
 import os
-from langchain.document_loaders import PyPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
-from langchain.chains import RetrievalQA
-from langchain.llms import OpenAI
-from langchain_openai import ChatOpenAI
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_community.vectorstores import FAISS
+# from langchain.prompts import PromptTemplate  # Not needed for this implementation
 import tempfile
 import shutil
 import time
@@ -142,23 +140,37 @@ class RAGChatbot:
         if vectorstore is None:
             return None
             
-        llm = ChatOpenAI(temperature=0.7, model_name="gpt-3.5-turbo")
-        qa_chain = RetrievalQA.from_chain_type(
-            llm=llm,
-            chain_type="stuff",
-            retriever=vectorstore.as_retriever(search_kwargs={"k": 3})
-        )
+        self.llm = ChatOpenAI(temperature=0.7, model_name="gpt-3.5-turbo")
+        self.retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
         
-        return qa_chain
+        return True
     
     def query(self, question):
         """질문에 대한 답변 생성"""
-        if self.qa_chain is None:
+        if not hasattr(self, 'retriever') or self.retriever is None:
             return "먼저 문서를 업로드해주세요."
         
         try:
-            response = self.qa_chain.run(question)
-            return response
+            # Retrieve relevant documents
+            docs = self.retriever.get_relevant_documents(question)
+            
+            # Create context from documents
+            context = "\n\n".join([doc.page_content for doc in docs])
+            
+            # Create prompt
+            prompt = f"""다음 문서를 바탕으로 질문에 답해주세요:
+
+문서 내용:
+{context}
+
+질문: {question}
+
+답변:"""
+            
+            # Generate response
+            response = self.llm.invoke(prompt)
+            return response.content
+            
         except Exception as e:
             return f"답변 생성 중 오류가 발생했습니다: {str(e)}"
 
@@ -190,7 +202,7 @@ def main():
         if st.button("🗑️ 대화 초기화", use_container_width=True):
             st.session_state.messages = []
             st.session_state.vectorstore = None
-            st.session_state.qa_chain = None
+            st.session_state.chatbot = None
             st.rerun()
         
         st.markdown("---")
@@ -238,18 +250,18 @@ def main():
                         vectorstore = chatbot.create_vectorstore(documents)
                         
                         # QA 체인 생성
-                        qa_chain = chatbot.create_qa_chain(vectorstore)
+                        qa_chain_created = chatbot.create_qa_chain(vectorstore)
                         
                         # 세션 상태에 저장
                         st.session_state.vectorstore = vectorstore
-                        st.session_state.qa_chain = qa_chain
+                        st.session_state.chatbot = chatbot
                         
                         st.markdown(f'<div class="status-success">✅ {len(documents)}개의 문서가 성공적으로 분석되었습니다!</div>', unsafe_allow_html=True)
                     else:
                         st.markdown('<div class="status-error">문서를 로드할 수 없습니다.</div>', unsafe_allow_html=True)
         
         # 문서 상태 표시
-        if st.session_state.get("qa_chain"):
+        if st.session_state.get("chatbot"):
             st.markdown("### ✅ 문서 상태")
             st.success("문서가 준비되었습니다!")
             st.markdown("이제 질문을 할 수 있습니다.")
@@ -274,9 +286,8 @@ def main():
             st.session_state.messages.append({"role": "user", "content": prompt})
             
             # 챗봇 응답 생성
-            if st.session_state.get("qa_chain"):
-                chatbot = RAGChatbot()
-                chatbot.qa_chain = st.session_state.qa_chain
+            if st.session_state.get("chatbot"):
+                chatbot = st.session_state.chatbot
                 
                 with st.spinner("답변을 생성하고 있습니다..."):
                     response = chatbot.query(prompt)
