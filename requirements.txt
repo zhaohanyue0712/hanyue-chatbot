@@ -1,8 +1,20 @@
-streamlit>=1.28.0
-langchain>=0.1.0
-langchain-openai>=0.0.5
-langchain-community>=0.0.10
-faiss-cpu>=1.7.0
-pypdf2>=3.0.0
-python-dotenv>=1.0.0
-tiktoken>=0.5.2
+streamlit==1.37.1
+
+# OpenAI & Tokenizer
+openai>=1.40,<2
+tiktoken>=0.7,<1
+
+# LangChain 主体与插件
+langchain==0.2.16
+langchain-openai==0.1.9
+langchain-community==0.2.16
+langchain-text-splitters==0.2.2
+
+# 向量数据库与 PDF 处理
+faiss-cpu==1.8.0.post1
+pypdf==4.2.0
+
+# 环境变量 & 数据工具
+python-dotenv==1.0.1
+pandas==2.2.2
+
